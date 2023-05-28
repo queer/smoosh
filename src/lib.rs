@@ -8,8 +8,8 @@ use tokio::io::{AsyncBufRead, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt
 
 pub async fn recompress<
     'a,
-    R: AsyncBufRead + std::marker::Unpin,
-    W: AsyncWrite + std::marker::Unpin,
+    R: AsyncBufRead + std::marker::Unpin + Send,
+    W: AsyncWrite + std::marker::Unpin + Send,
 >(
     input: &mut R,
     output: &mut W,

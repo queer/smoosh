@@ -4,11 +4,11 @@ use async_compression::tokio::bufread::{
 use async_compression::tokio::write::{
     BzEncoder, DeflateEncoder, GzipEncoder, XzEncoder, ZlibEncoder, ZstdEncoder,
 };
-use tokio::io::{AsyncBufRead, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader};
 
 pub async fn recompress<
     'a,
-    R: AsyncBufRead + std::marker::Unpin + Send,
+    R: AsyncRead + std::marker::Unpin + Send,
     W: AsyncWrite + std::marker::Unpin + Send,
 >(
     input: &mut R,
@@ -24,13 +24,13 @@ pub async fn recompress<
     }
 
     let mut decompressor: Box<dyn AsyncRead + std::marker::Unpin + Send> = match input_type {
-        CompressionType::Bzip => Box::new(BzDecoder::new(input)),
-        CompressionType::Deflate => Box::new(DeflateDecoder::new(input)),
-        CompressionType::Gzip => Box::new(GzipDecoder::new(input)),
-        CompressionType::Xz => Box::new(XzDecoder::new(input)),
-        CompressionType::Zlib => Box::new(ZlibDecoder::new(input)),
-        CompressionType::Zstd => Box::new(ZstdDecoder::new(input)),
-        CompressionType::None => Box::new(input),
+        CompressionType::Bzip => Box::new(BzDecoder::new(BufReader::new(input))),
+        CompressionType::Deflate => Box::new(DeflateDecoder::new(BufReader::new(input))),
+        CompressionType::Gzip => Box::new(GzipDecoder::new(BufReader::new(input))),
+        CompressionType::Xz => Box::new(XzDecoder::new(BufReader::new(input))),
+        CompressionType::Zlib => Box::new(ZlibDecoder::new(BufReader::new(input))),
+        CompressionType::Zstd => Box::new(ZstdDecoder::new(BufReader::new(input))),
+        CompressionType::None => Box::new(BufReader::new(input)),
     };
 
     let mut recompressor: Box<dyn AsyncWrite + std::marker::Unpin + Send> = match output_type {
@@ -49,7 +49,7 @@ pub async fn recompress<
     Ok(())
 }
 
-async fn detect_stream_characteristics<R: AsyncBufRead + std::marker::Unpin>(
+async fn detect_stream_characteristics<R: AsyncRead + std::marker::Unpin>(
     stream: &mut R,
 ) -> std::io::Result<(CompressionType, Vec<u8>)> {
     let mut buffer = [0; 6];

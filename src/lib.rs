@@ -23,7 +23,7 @@ pub async fn recompress<
         return Ok(());
     }
 
-    let mut decompressor: Box<dyn AsyncRead + std::marker::Unpin> = match input_type {
+    let mut decompressor: Box<dyn AsyncRead + std::marker::Unpin + Send> = match input_type {
         CompressionType::Bzip => Box::new(BzDecoder::new(input)),
         CompressionType::Deflate => Box::new(DeflateDecoder::new(input)),
         CompressionType::Gzip => Box::new(GzipDecoder::new(input)),
@@ -33,7 +33,7 @@ pub async fn recompress<
         CompressionType::None => Box::new(input),
     };
 
-    let mut recompressor: Box<dyn AsyncWrite + std::marker::Unpin> = match output_type {
+    let mut recompressor: Box<dyn AsyncWrite + std::marker::Unpin + Send> = match output_type {
         CompressionType::Bzip => Box::new(BzEncoder::new(output)),
         CompressionType::Deflate => Box::new(DeflateEncoder::new(output)),
         CompressionType::Gzip => Box::new(GzipEncoder::new(output)),

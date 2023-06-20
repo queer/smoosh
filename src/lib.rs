@@ -14,13 +14,13 @@ pub async fn recompress<
     input: &mut R,
     output: &mut W,
     output_type: CompressionType,
-) -> std::io::Result<()> {
+) -> std::io::Result<CompressionType> {
     let (input_type, magic) = detect_stream_characteristics(input).await?;
     let input = &mut magic.chain(input);
 
     if input_type == output_type {
         tokio::io::copy(input, output).await?;
-        return Ok(());
+        return Ok(input_type);
     }
 
     let mut decompressor: Box<dyn AsyncRead + std::marker::Unpin + Send> = match input_type {
@@ -46,7 +46,7 @@ pub async fn recompress<
     tokio::io::copy(&mut decompressor, &mut recompressor).await?;
     recompressor.flush().await?;
 
-    Ok(())
+    Ok(input_type)
 }
 
 async fn detect_stream_characteristics<R: AsyncRead + std::marker::Unpin>(

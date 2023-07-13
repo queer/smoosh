@@ -82,6 +82,20 @@ pub enum CompressionType {
     None,    //
 }
 
+impl CompressionType {
+    pub fn file_extension(&self) -> &'static str {
+        match self {
+            CompressionType::Bzip => "bz2",
+            CompressionType::Deflate => "deflate",
+            CompressionType::Gzip => "gz",
+            CompressionType::Xz => "xz",
+            CompressionType::Zlib => "zlib",
+            CompressionType::Zstd => "zst",
+            CompressionType::None => "",
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::io::Result;
@@ -214,6 +228,159 @@ mod test {
         assert!(!compressed_stream.is_empty());
         assert_eq!(compressed_stream, output_stream);
         assert_ne!(expected.as_bytes(), output_stream);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_big_none_compression_works() -> Result<()> {
+        let expected: &[u8] = &[69u8; 69_420];
+        let input_stream = expected.to_vec();
+        let mut output_stream: Vec<u8> = Vec::new();
+
+        recompress(
+            &mut input_stream.as_slice(),
+            &mut output_stream,
+            CompressionType::None,
+        )
+        .await?;
+
+        assert_eq!(expected, output_stream);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_big_zstd_compression_works() -> Result<()> {
+        let expected: &[u8] = &[69u8; 69_420];
+        let input_stream = expected.to_vec();
+        let mut output_stream: Vec<u8> = Vec::new();
+
+        recompress(
+            &mut input_stream.as_slice(),
+            &mut output_stream,
+            CompressionType::Zstd,
+        )
+        .await?;
+
+        let mut compressed_stream: Vec<u8> = Vec::new();
+        {
+            let mut encoder = ZstdEncoder::new(&mut compressed_stream);
+            encoder.write_all(expected).await?;
+            encoder.flush().await?;
+        }
+
+        assert!(!compressed_stream.is_empty());
+        assert_eq!(compressed_stream, output_stream);
+        assert_ne!(expected, output_stream);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_big_gzip_compression_works() -> Result<()> {
+        let expected: &[u8] = &[69u8; 69_420];
+        let input_stream = expected.to_vec();
+        let mut output_stream: Vec<u8> = Vec::new();
+
+        recompress(
+            &mut input_stream.as_slice(),
+            &mut output_stream,
+            CompressionType::Gzip,
+        )
+        .await?;
+
+        let mut compressed_stream: Vec<u8> = Vec::new();
+        {
+            let mut encoder = GzipEncoder::new(&mut compressed_stream);
+            encoder.write_all(expected).await?;
+            encoder.flush().await?;
+        }
+
+        assert!(!compressed_stream.is_empty());
+        assert_eq!(compressed_stream, output_stream);
+        assert_ne!(expected, output_stream);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_big_deflate_compression_works() -> Result<()> {
+        let expected: &[u8] = &[69u8; 69_420];
+        let input_stream = expected.to_vec();
+        let mut output_stream: Vec<u8> = Vec::new();
+
+        recompress(
+            &mut input_stream.as_slice(),
+            &mut output_stream,
+            CompressionType::Deflate,
+        )
+        .await?;
+
+        let mut compressed_stream: Vec<u8> = Vec::new();
+        {
+            let mut encoder = DeflateEncoder::new(&mut compressed_stream);
+            encoder.write_all(expected).await?;
+            encoder.flush().await?;
+        }
+
+        assert!(!compressed_stream.is_empty());
+        assert_eq!(compressed_stream, output_stream);
+        assert_ne!(expected, output_stream);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_big_zlib_compression_works() -> Result<()> {
+        let expected: &[u8] = &[69u8; 69_420];
+        let input_stream = expected.to_vec();
+        let mut output_stream: Vec<u8> = Vec::new();
+
+        recompress(
+            &mut input_stream.as_slice(),
+            &mut output_stream,
+            CompressionType::Zlib,
+        )
+        .await?;
+
+        let mut compressed_stream: Vec<u8> = Vec::new();
+        {
+            let mut encoder = ZlibEncoder::new(&mut compressed_stream);
+            encoder.write_all(expected).await?;
+            encoder.flush().await?;
+        }
+
+        assert!(!compressed_stream.is_empty());
+        assert_eq!(compressed_stream, output_stream);
+        assert_ne!(expected, output_stream);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_big_xz_compression_works() -> Result<()> {
+        let expected: &[u8] = &[69u8; 69_420];
+        let input_stream = expected.to_vec();
+        let mut output_stream: Vec<u8> = Vec::new();
+
+        recompress(
+            &mut input_stream.as_slice(),
+            &mut output_stream,
+            CompressionType::Xz,
+        )
+        .await?;
+
+        let mut compressed_stream: Vec<u8> = Vec::new();
+        {
+            let mut encoder = XzEncoder::new(&mut compressed_stream);
+            encoder.write_all(expected).await?;
+            encoder.flush().await?;
+        }
+
+        assert!(!compressed_stream.is_empty());
+        assert_eq!(compressed_stream, output_stream);
+        assert_ne!(expected, output_stream.as_slice());
 
         Ok(())
     }
